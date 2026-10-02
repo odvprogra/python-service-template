@@ -14,7 +14,7 @@ template reach existing services as a reviewable diff instead of being re-applie
 
 ## Generate a service
 
-Requires [uv](https://docs.astral.sh/uv/).
+Requires [uv](https://docs.astral.sh/uv/) (and Docker for services with a database).
 
 ```sh
 uvx copier copy --trust gh:odvprogra/python-service-template my-service
@@ -57,6 +57,13 @@ Copier asks for:
     safe, UUIDv7 otherwise), the same ID on every log line, one `request.completed` line per request
   - `/health/live` and `/health/ready` with pluggable readiness checks
   - a committed `openapi.json` with a drift test (`just openapi` regenerates it) and `just dev`
+- With `has_database`: PostgreSQL 18 through async SQLAlchemy (asyncpg) and Alembic
+  - `DATABASE_URL` as a secret setting; plain `postgres://` URLs from hosting providers are accepted
+  - a declarative base with deterministic constraint names, a session factory and a readiness check
+  - Alembic configured in `pyproject.toml`; new revisions are run through ruff automatically
+  - integration tests on a real PostgreSQL (testcontainers) that prove migrations are reversible and
+    that models and migrations are in sync (`alembic check`)
+  - `docker-compose.yml` for local development; `just dev`, `just migrate`, `just migration`
 
 After generating: `cd my-service && git init && just setup && just check`.
 
