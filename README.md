@@ -49,7 +49,12 @@ Copier asks for:
 - `justfile` with the uniform commands: `setup`, `lint`, `typecheck`, `test`, `check`, `fmt`
 - pre-commit hooks: whitespace and file checks, ruff and mypy (through `uv run`, so the versions
   come from `uv.lock`), gitleaks, and Conventional Commits on the commit message
-- `.github/workflows/ci.yml` calling the shared `python-ci` and `security` workflows
+- `.github/workflows/ci.yml` calling the shared `python-ci` and `security` workflows, plus
+  `docker-build` (non-root check and `/health/ready` smoke test) for services with an HTTP API
+- Multi-stage `Dockerfile` following uv's Docker guidance: dependencies cached in their own layer,
+  the project installed non-editable, a runtime image with only the virtual environment, run as an
+  unprivileged user; database services ship their migrations
+  (`docker run <image> alembic upgrade head` as a release step)
 - With `has_web_api`: a FastAPI app with
   - RFC 9457 Problem Details for domain, validation, HTTP and unexpected errors (a 500 never leaks
     internals)

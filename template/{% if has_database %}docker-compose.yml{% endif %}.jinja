@@ -1,5 +1,5 @@
-# Local infrastructure for `just dev` and manual testing. Tests start their own database
-# (testcontainers), so they never touch this one.
+# Local infrastructure for `just dev` (which starts only postgres) and the full stack for the CI smoke
+# test (`docker compose up --wait`). Tests start their own database with testcontainers.
 services:
   postgres:
     image: postgres:18-alpine
@@ -17,6 +17,28 @@ services:
       interval: 2s
       timeout: 3s
       retries: 20
+{%- if has_web_api %}
+
+  app:
+    build: .
+    environment:
+      DATABASE_URL: postgresql+asyncpg://app:app@postgres:5432/{{ package_name }}
+      ENVIRONMENT: local
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/ready')"
+      interval: 2s
+      timeout: 3s
+      retries: 20
+{%- endif %}
 
 volumes:
   postgres-data:

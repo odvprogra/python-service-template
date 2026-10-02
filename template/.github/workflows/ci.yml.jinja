@@ -19,3 +19,12 @@ jobs:
 
   security:
     uses: odvprogra/engineering-standards/.github/workflows/security.yml@{{ standards_ref }}
+{%- if has_web_api %}
+
+  docker:
+    uses: odvprogra/engineering-standards/.github/workflows/docker-build.yml@{{ standards_ref }}
+{%- if has_database %}
+    with:
+      compose-file: docker-compose.yml # readiness needs PostgreSQL
+{%- endif %}
+{%- endif %}
