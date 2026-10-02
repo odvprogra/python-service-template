@@ -36,6 +36,17 @@ Copier asks for:
 | `copyright_year` | current year              | Year in the license                                                     |
 | `standards_ref`  | `v1`                      | Release of the shared CI workflows that the generated CI pins           |
 
+## What a generated service includes
+
+- `pyproject.toml` for uv with ruff (lint + format), mypy strict, pytest, coverage (80% gate) and
+  hypothesis configured; Python 3.14 pinned in `.python-version`
+- `justfile` with the uniform commands: `setup`, `lint`, `typecheck`, `test`, `check`, `fmt`
+- pre-commit hooks: whitespace and file checks, ruff and mypy (through `uv run`, so the versions
+  come from `uv.lock`), gitleaks, and Conventional Commits on the commit message
+- `.github/workflows/ci.yml` calling the shared `python-ci` and `security` workflows
+
+After generating: `cd my-service && git init && just setup && just check`.
+
 ## Update a generated service
 
 ```sh

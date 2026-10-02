@@ -1,0 +1,81 @@
+[project]
+name = "{{ project_slug }}"
+version = "0.1.0"
+description = "{{ description }}"
+readme = "README.md"
+license = "{{ license }}"
+license-files = ["LICENSE"]
+authors = [{ name = "{{ author_name }}" }]
+requires-python = ">=3.14"
+dependencies = []
+
+[dependency-groups]
+dev = [
+    "hypothesis>=6.168",
+    "mypy>=2.4",
+    "pre-commit>=4.6",
+    "pytest>=9.1",
+    "pytest-cov>=7.1",
+    "ruff>=0.16",
+]
+
+[build-system]
+requires = ["uv_build>=0.12,<0.13"]
+build-backend = "uv_build"
+
+# --- Lint and format (HANDBOOK §1, §6) -------------------------------------------------------------
+
+[tool.ruff]
+line-length = 100
+target-version = "py314"
+
+[tool.ruff.lint]
+select = [
+    "E", "W", "F",  # pycodestyle, pyflakes
+    "I",            # import order
+    "N",            # naming
+    "UP",           # modern syntax
+    "B",            # likely bugs
+    "A",            # shadowed builtins
+    "C4",           # comprehensions
+    "DTZ",          # naive datetimes (time is always UTC-aware)
+    "T20",          # print statements
+    "ERA",          # commented-out code
+    "S",            # security
+    "PT",           # pytest style
+    "RET", "SIM",   # simpler control flow
+    "ARG",          # unused arguments
+    "ASYNC",        # async pitfalls
+    "RUF",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = [
+    "S101",  # assert is how pytest checks
+]
+
+# --- Types (ADR-0003 in engineering-standards) -----------------------------------------------------
+
+[tool.mypy]
+strict = true
+files = ["src", "tests"]
+warn_unreachable = true
+enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool"]
+
+# --- Tests and coverage (HANDBOOK §7) --------------------------------------------------------------
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = ["-ra", "--strict-markers", "--strict-config", "--import-mode=importlib"]
+xfail_strict = true
+filterwarnings = ["error"]
+
+[tool.coverage.run]
+source = ["src"]
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+skip_empty = true
+fail_under = 80
+exclude_also = ["if TYPE_CHECKING:", "@overload"]

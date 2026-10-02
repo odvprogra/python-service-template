@@ -1,0 +1,33 @@
+# Uniform commands (HANDBOOK §3). Requires uv; `just setup` once after cloning.
+
+set windows-shell := ["powershell.exe", "-NoLogo", "-NoProfile", "-Command"]
+
+# List the recipes
+default:
+    @just --list
+
+# Install dependencies and the git hooks
+setup:
+    uv sync
+    uv run pre-commit install --install-hooks --hook-type pre-commit --hook-type commit-msg
+
+# Check formatting and lint
+lint:
+    uv run ruff format --check .
+    uv run ruff check .
+
+# Type-check (mypy strict)
+typecheck:
+    uv run mypy
+
+# Run the tests with coverage
+test *args:
+    uv run pytest --cov {{ args }}
+
+# Everything CI checks; must pass before anything lands on main
+check: lint typecheck test
+
+# Format and apply safe lint fixes
+fmt:
+    uv run ruff format .
+    uv run ruff check --fix .
