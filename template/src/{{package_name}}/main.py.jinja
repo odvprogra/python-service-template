@@ -1,0 +1,23 @@
+"""Composition root: the only module that reads settings and wires adapters together."""
+
+import structlog
+
+from {{ package_name }} import __version__
+from {{ package_name }}.infrastructure.logging import configure_logging
+from {{ package_name }}.settings import LogFormat, Settings
+
+
+def main() -> None:
+    """Start the service."""
+    settings = Settings()
+    configure_logging(settings.log_level, json=settings.log_format is LogFormat.JSON)
+    structlog.get_logger(__name__).info(
+        "service.started",
+        service=settings.service_name,
+        version=__version__,
+        environment=settings.environment,
+    )
+
+
+if __name__ == "__main__":
+    main()

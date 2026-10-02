@@ -7,11 +7,19 @@ license = "{{ license }}"
 license-files = ["LICENSE"]
 authors = [{ name = "{{ author_name }}" }]
 requires-python = ">=3.14"
-dependencies = []
+dependencies = [
+    "pydantic>=2.13",
+    "pydantic-settings>=2.15",
+    "structlog>=26.1",
+]
+
+[project.scripts]
+{{ project_slug }} = "{{ package_name }}.main:main"
 
 [dependency-groups]
 dev = [
     "hypothesis>=6.168",
+    "import-linter>=2.15",
     "mypy>=2.4",
     "pre-commit>=4.6",
     "pytest>=9.1",
@@ -61,6 +69,12 @@ strict = true
 files = ["src", "tests"]
 warn_unreachable = true
 enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool"]
+plugins = ["pydantic.mypy"]
+
+[tool.pydantic-mypy]
+init_forbid_extra = true
+init_typed = true
+warn_required_dynamic_aliases = true
 
 # --- Tests and coverage (HANDBOOK §7) --------------------------------------------------------------
 
@@ -78,4 +92,30 @@ branch = true
 show_missing = true
 skip_empty = true
 fail_under = 80
-exclude_also = ["if TYPE_CHECKING:", "@overload"]
+exclude_also = ["if TYPE_CHECKING:", "@overload", 'if __name__ == "__main__":']
+
+# --- Architecture (HANDBOOK §5; checked by tests/architecture) -----------------------------------
+
+[tool.importlinter]
+root_package = "{{ package_name }}"
+include_external_packages = true
+
+[[tool.importlinter.contracts]]
+name = "Dependencies point inward"
+type = "layers"
+layers = [
+    "{{ package_name }}.main",
+    "{{ package_name }}.infrastructure",
+    "{{ package_name }}.application",
+    "{{ package_name }}.domain",
+]
+
+[[tool.importlinter.contracts]]
+name = "The domain is pure Python"
+type = "forbidden"
+source_modules = ["{{ package_name }}.domain"]
+forbidden_modules = [
+    "{{ package_name }}.settings",
+    "pydantic_settings",
+    "structlog",
+]

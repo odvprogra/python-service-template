@@ -1,0 +1,31 @@
+import json
+import logging
+from collections.abc import Iterator
+
+import pytest
+import structlog
+
+from {{ package_name }}.main import main
+
+
+@pytest.fixture(autouse=True)
+def _restore_logging() -> Iterator[None]:
+    root = logging.getLogger()
+    handlers, level = root.handlers[:], root.level
+    yield
+    structlog.reset_defaults()
+    root.handlers, root.level = handlers, level
+
+
+def test_main_logs_startup_event_with_service_metadata(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.setenv("ENVIRONMENT", "test")
+    monkeypatch.setenv("LOG_FORMAT", "json")
+
+    main()
+
+    line = json.loads(capsys.readouterr().err.splitlines()[-1])
+    assert line["event"] == "service.started"
+    assert line["service"] == "{{ project_slug }}"
+    assert line["environment"] == "test"
