@@ -11,6 +11,10 @@ dependencies = [
     "pydantic>=2.13",
     "pydantic-settings>=2.15",
     "structlog>=26.1",
+{%- if has_web_api %}
+    "fastapi>=0.142",
+    "uvicorn[standard]>=0.54",
+{%- endif %}
 ]
 
 [project.scripts]
@@ -19,10 +23,16 @@ dependencies = [
 [dependency-groups]
 dev = [
     "hypothesis>=6.168",
+{%- if has_web_api %}
+    "httpx>=0.28",
+{%- endif %}
     "import-linter>=2.15",
     "mypy>=2.4",
     "pre-commit>=4.6",
     "pytest>=9.1",
+{%- if has_web_api %}
+    "pytest-asyncio>=1.4",
+{%- endif %}
     "pytest-cov>=7.1",
     "ruff>=0.16",
 ]
@@ -54,6 +64,9 @@ select = [
     "RET", "SIM",   # simpler control flow
     "ARG",          # unused arguments
     "ASYNC",        # async pitfalls
+{%- if has_web_api %}
+    "FAST",         # FastAPI conventions
+{%- endif %}
     "RUF",
 ]
 
@@ -83,6 +96,10 @@ testpaths = ["tests"]
 addopts = ["-ra", "--strict-markers", "--strict-config", "--import-mode=importlib"]
 xfail_strict = true
 filterwarnings = ["error"]
+{%- if has_web_api %}
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+{%- endif %}
 
 [tool.coverage.run]
 source = ["src"]
@@ -105,7 +122,11 @@ name = "Dependencies point inward"
 type = "layers"
 layers = [
     "{{ package_name }}.main",
+{%- if has_web_api %}
+    "{{ package_name }}.api | {{ package_name }}.infrastructure",
+{%- else %}
     "{{ package_name }}.infrastructure",
+{%- endif %}
     "{{ package_name }}.application",
     "{{ package_name }}.domain",
 ]
@@ -118,4 +139,9 @@ forbidden_modules = [
     "{{ package_name }}.settings",
     "pydantic_settings",
     "structlog",
+{%- if has_web_api %}
+    "fastapi",
+    "starlette",
+    "uvicorn",
+{%- endif %}
 ]

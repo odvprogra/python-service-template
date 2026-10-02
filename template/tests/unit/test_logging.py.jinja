@@ -1,23 +1,11 @@
 import io
 import json
 import logging
-from collections.abc import Iterator
 from typing import Any
 
-import pytest
 import structlog
 
 from {{ package_name }}.infrastructure.logging import configure_logging
-
-
-@pytest.fixture(autouse=True)
-def _restore_logging() -> Iterator[None]:
-    root = logging.getLogger()
-    handlers, level = root.handlers[:], root.level
-    yield
-    structlog.contextvars.clear_contextvars()
-    structlog.reset_defaults()
-    root.handlers, root.level = handlers, level
 
 
 def _json_lines(stream: io.StringIO) -> list[dict[str, Any]]:

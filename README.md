@@ -50,6 +50,13 @@ Copier asks for:
 - pre-commit hooks: whitespace and file checks, ruff and mypy (through `uv run`, so the versions
   come from `uv.lock`), gitleaks, and Conventional Commits on the commit message
 - `.github/workflows/ci.yml` calling the shared `python-ci` and `security` workflows
+- With `has_web_api`: a FastAPI app with
+  - RFC 9457 Problem Details for domain, validation, HTTP and unexpected errors (a 500 never leaks
+    internals)
+  - a pure ASGI request-context middleware: `X-Request-ID` on every response (caller's ID echoed if
+    safe, UUIDv7 otherwise), the same ID on every log line, one `request.completed` line per request
+  - `/health/live` and `/health/ready` with pluggable readiness checks
+  - a committed `openapi.json` with a drift test (`just openapi` regenerates it) and `just dev`
 
 After generating: `cd my-service && git init && just setup && just check`.
 
