@@ -26,10 +26,19 @@ from pathlib import Path
 from copier import run_copy
 
 TEMPLATE_ROOT = Path(__file__).resolve().parents[1]
-# Copier answers per variant. api-db names its import package differently from the distribution
-# (demo-service ships `demo`) to exercise that path; the others keep the derived default.
+# Copier answers per variant. api-db exercises the non-default paths: an import package named
+# differently from the distribution (demo-service ships `demo`) and a description too long for one
+# line of code.
 VARIANTS: dict[str, dict[str, bool | str]] = {
-    "api-db": {"has_web_api": True, "has_database": True, "package_name": "demo"},
+    "api-db": {
+        "has_web_api": True,
+        "has_database": True,
+        "package_name": "demo",
+        "description": (
+            "A demo service whose one-line description is long enough to need wrapping wherever"
+            " it is rendered as code."
+        ),
+    },
     "api": {"has_web_api": True, "has_database": False},
     "db": {"has_web_api": False, "has_database": True},
     "minimal": {"has_web_api": False, "has_database": False},
