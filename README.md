@@ -4,6 +4,7 @@
 > [engineering handbook](https://github.com/odvprogra/engineering-standards/blob/v1/HANDBOOK.md),
 > and keeps them in sync with it as it evolves.
 
+[![CI](https://github.com/odvprogra/python-service-template/actions/workflows/ci.yml/badge.svg)](https://github.com/odvprogra/python-service-template/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 ## Why
@@ -85,6 +86,18 @@ uvx copier update --trust
 
 Answers are stored in the generated `.copier-answers.yml`; Copier re-applies the template and shows
 the differences as a normal git diff to review.
+
+## Developing the template
+
+Every option combination is rendered and checked in CI: the generated project must pass its own
+`just setup`, `just check` (including integration tests on PostgreSQL) and pre-commit hooks, then
+its image must build, run as non-root and answer `/health/ready`. The same script runs locally:
+
+```sh
+just lint                 # actionlint, ruff on scripts/, Prettier, markdownlint
+just test api-db --docker # one variant: api-db, api, db or minimal
+just check                # lint + every variant with the Docker smoke test
+```
 
 ## License
 
