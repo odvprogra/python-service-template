@@ -1,0 +1,60 @@
+name: CI
+
+# Renders every option combination and runs each generated project's own checks (just setup, just
+# check, pre-commit, image build and smoke test) with scripts/check_variant.py, the same script that
+# backs `just test` locally.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+
+      - name: just lint
+        run: uvx --from rust-just@1.58.0 just lint
+
+  variant:
+    name: Generated service (${{ matrix.variant }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [api-db, api, db, minimal]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # Copier renders from the git history
+          persist-credentials: false
+
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+
+      - name: Install just
+        run: uv tool install rust-just@1.58.0
+
+      - name: Render, check and smoke-test
+        env:
+          VARIANT: ${{ matrix.variant }}
+        run: uv run scripts/check_variant.py "$VARIANT" --docker

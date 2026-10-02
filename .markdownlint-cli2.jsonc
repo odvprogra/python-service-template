@@ -1,0 +1,6 @@
+// Which files markdownlint-cli2 checks. Rules live in .markdownlint.jsonc.
+{
+  "globs": ["**/*.md"],
+  // Copies of the engineering-standards templates, linted there.
+  "ignores": ["**/node_modules/**", "**/.venv/**", ".github/**", "template/.github/**"],
+}

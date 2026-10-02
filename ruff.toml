@@ -1,0 +1,17 @@
+# Lint settings for scripts/: the same rules generated services use (template/pyproject.toml.jinja).
+line-length = 100
+target-version = "py314"
+extend-exclude = ["template"]
+
+[lint]
+select = [
+    "E", "W", "F", "I", "N", "UP", "B", "A", "C4", "DTZ", "T20", "ERA", "S", "PT", "RET", "SIM",
+    "ARG", "ASYNC", "RUF",
+]
+
+[lint.per-file-ignores]
+"scripts/**" = [
+    "T201",  # print is the script's user interface
+    "S603",  # subprocess runs fixed developer tools (uv, just, git, docker), never user input
+    "S607",  # ...resolved from PATH on purpose: CI and laptops install them in different places
+]
