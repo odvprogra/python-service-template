@@ -18,7 +18,7 @@ template reach existing services as a reviewable diff instead of being re-applie
 Requires [uv](https://docs.astral.sh/uv/) (and Docker for services with a database).
 
 ```sh
-uvx copier copy --trust gh:odvprogra/python-service-template my-service
+uvx copier copy gh:odvprogra/python-service-template my-service
 ```
 
 Copier asks for:
@@ -81,11 +81,23 @@ After generating: `cd my-service && git init && just setup && just check`.
 ## Update a generated service
 
 ```sh
-uvx copier update --trust
+uvx copier update
 ```
 
 Answers are stored in the generated `.copier-answers.yml`; Copier re-applies the template and shows
 the differences as a normal git diff to review.
+
+## Key decisions
+
+| Decision                                                                                              | Why                                                                            |
+| ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| [Copier](docs/adr/0002-use-copier-for-the-service-template.md)                                        | `copier update` brings baseline improvements to existing services              |
+| [Check generated projects in CI](docs/adr/0003-verify-the-template-by-checking-generated-projects.md) | Every option combination must pass its own checks and the container smoke test |
+| [Architecture tests](docs/adr/0004-architecture-tests-with-import-linter.md)                          | The dependency rule fails the build instead of eroding                         |
+| [Migrations as a release step](docs/adr/0005-run-migrations-as-a-release-step.md)                     | No migration races between replicas; a failed migration stops the release      |
+| [httpx for API tests](docs/adr/0006-keep-httpx-for-api-tests.md)                                      | A stable test client until its successor matures                               |
+
+All ADRs: [docs/adr](docs/adr/README.md).
 
 ## Developing the template
 
