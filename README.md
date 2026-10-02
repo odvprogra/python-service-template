@@ -38,6 +38,12 @@ Copier asks for:
 
 ## What a generated service includes
 
+- Hexagonal-lite layout: `domain`, `application`, `infrastructure` and a `main.py` composition root,
+  with an **architecture test** (import-linter) that fails if a layer imports outward or the domain
+  imports frameworks
+- Settings from the environment with pydantic-settings (validated at startup) and `.env.example`
+- Structured logging with structlog: JSON when deployed, console locally, standard-library records
+  in the same format, context such as `request_id` on every line
 - `pyproject.toml` for uv with ruff (lint + format), mypy strict, pytest, coverage (80% gate) and
   hypothesis configured; Python 3.14 pinned in `.python-version`
 - `justfile` with the uniform commands: `setup`, `lint`, `typecheck`, `test`, `check`, `fmt`

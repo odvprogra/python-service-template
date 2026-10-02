@@ -1,0 +1,31 @@
+"""Service configuration, read from environment variables (12-factor) and an optional ``.env``."""
+
+from enum import StrEnum
+from typing import Literal
+
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+type LogLevel = Literal["DEBUG", "INFO", "WARNING", "ERROR"]
+
+
+class Environment(StrEnum):
+    LOCAL = "local"
+    TEST = "test"
+    STAGING = "staging"
+    PRODUCTION = "production"
+
+
+class LogFormat(StrEnum):
+    JSON = "json"
+    CONSOLE = "console"
+
+
+class Settings(BaseSettings):
+    """Validated settings: an invalid value stops the service at startup, not at first use."""
+
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore", frozen=True)
+
+    service_name: str = "{{ project_slug }}"
+    environment: Environment = Environment.LOCAL
+    log_level: LogLevel = "INFO"
+    log_format: LogFormat = LogFormat.JSON
