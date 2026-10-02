@@ -1,0 +1,25 @@
+"""FastAPI application assembly: routers, middleware and error handlers.
+
+No configuration is read here; the composition root passes everything in.
+"""
+
+from collections.abc import Mapping
+
+from fastapi import FastAPI
+
+from {{ package_name }} import __version__
+from {{ package_name }}.api import health
+from {{ package_name }}.api.health import ReadinessCheck
+from {{ package_name }}.api.middleware import RequestContextMiddleware
+from {{ package_name }}.api.problems import register_problem_handlers
+
+
+def create_app(
+    *, title: str, readiness_checks: Mapping[str, ReadinessCheck] | None = None
+) -> FastAPI:
+    app = FastAPI(title=title, version=__version__)
+    app.state.readiness_checks = dict(readiness_checks or {})
+    app.include_router(health.router)
+    register_problem_handlers(app)
+    app.add_middleware(RequestContextMiddleware)
+    return app

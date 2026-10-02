@@ -3,6 +3,9 @@
 from enum import StrEnum
 from typing import Literal
 
+{% if has_web_api -%}
+from pydantic import Field
+{% endif -%}
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 type LogLevel = Literal["DEBUG", "INFO", "WARNING", "ERROR"]
@@ -29,3 +32,7 @@ class Settings(BaseSettings):
     environment: Environment = Environment.LOCAL
     log_level: LogLevel = "INFO"
     log_format: LogFormat = LogFormat.JSON
+{%- if has_web_api %}
+    host: str = "127.0.0.1"
+    port: int = Field(default=8000, ge=1, le=65535)
+{%- endif %}

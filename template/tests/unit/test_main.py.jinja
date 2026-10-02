@@ -1,22 +1,50 @@
 import json
-import logging
-from collections.abc import Iterator
+{%- if has_web_api %}
+from pathlib import Path
+from typing import Any
+{%- endif %}
 
 import pytest
-import structlog
+{%- if has_web_api %}
+import uvicorn
+{%- endif %}
 
+{% if has_web_api -%}
+from {{ package_name }} import main as composition
+{%- else -%}
 from {{ package_name }}.main import main
+{%- endif %}
 
 
-@pytest.fixture(autouse=True)
-def _restore_logging() -> Iterator[None]:
-    root = logging.getLogger()
-    handlers, level = root.handlers[:], root.level
-    yield
-    structlog.reset_defaults()
-    root.handlers, root.level = handlers, level
+{% if has_web_api -%}
+def test_main_starts_uvicorn_with_settings_and_structured_logging(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.setenv("ENVIRONMENT", "test")
+    monkeypatch.setenv("LOG_FORMAT", "json")
+    monkeypatch.setenv("PORT", "8123")
+    calls: list[dict[str, Any]] = []
+    monkeypatch.setattr(uvicorn, "run", lambda _app, **kwargs: calls.append(kwargs))
+
+    composition.main()
+
+    (kwargs,) = calls
+    assert kwargs["port"] == 8123
+    assert kwargs["log_config"] is None
+    line = json.loads(capsys.readouterr().err.splitlines()[-1])
+    assert line["event"] == "service.started"
+    assert line["service"] == "{{ project_slug }}"
+    assert line["environment"] == "test"
 
 
+def test_write_openapi_writes_the_application_spec(tmp_path: Path) -> None:
+    spec_path = tmp_path / "openapi.json"
+
+    composition.write_openapi(spec_path)
+
+    spec = json.loads(spec_path.read_text(encoding="utf-8"))
+    assert "/health/ready" in spec["paths"]
+{%- else -%}
 def test_main_logs_startup_event_with_service_metadata(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
@@ -29,3 +57,4 @@ def test_main_logs_startup_event_with_service_metadata(
     assert line["event"] == "service.started"
     assert line["service"] == "{{ project_slug }}"
     assert line["environment"] == "test"
+{%- endif %}
