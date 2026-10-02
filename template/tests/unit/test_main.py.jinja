@@ -11,6 +11,9 @@ import uvicorn
 
 {% if has_web_api -%}
 from {{ package_name }} import main as composition
+{%- if has_database %}
+from {{ package_name }}.settings import Settings
+{%- endif %}
 {%- else -%}
 from {{ package_name }}.main import main
 {%- endif %}
@@ -44,6 +47,14 @@ def test_write_openapi_writes_the_application_spec(tmp_path: Path) -> None:
 
     spec = json.loads(spec_path.read_text(encoding="utf-8"))
     assert "/health/ready" in spec["paths"]
+{%- if has_database %}
+
+
+def test_build_app_checks_the_database_for_readiness() -> None:
+    app = composition.build_app(Settings(_env_file=None))
+
+    assert set(app.state.readiness_checks) == {"database"}
+{%- endif %}
 {%- else -%}
 def test_main_logs_startup_event_with_service_metadata(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]

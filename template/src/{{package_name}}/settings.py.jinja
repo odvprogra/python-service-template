@@ -3,12 +3,18 @@
 from enum import StrEnum
 from typing import Literal
 
-{% if has_web_api -%}
-from pydantic import Field
+{% set pydantic_names = ([] + (["Field"] if has_web_api else []) + (["SecretStr", "field_validator"] if has_database else [])) -%}
+{% if pydantic_names -%}
+from pydantic import {{ pydantic_names | join(", ") }}
 {% endif -%}
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 type LogLevel = Literal["DEBUG", "INFO", "WARNING", "ERROR"]
+{%- if has_database %}
+
+_ASYNC_DRIVER_SCHEME = "postgresql+asyncpg://"
+_PLAIN_SCHEMES = ("postgresql://", "postgres://")
+{%- endif %}
 
 
 class Environment(StrEnum):
@@ -35,4 +41,18 @@ class Settings(BaseSettings):
 {%- if has_web_api %}
     host: str = "127.0.0.1"
     port: int = Field(default=8000, ge=1, le=65535)
+{%- endif %}
+{%- if has_database %}
+    # Matches docker-compose.yml for local development; deployed environments set DATABASE_URL.
+    database_url: SecretStr = SecretStr("postgresql+asyncpg://app:app@localhost:5432/{{ package_name }}")
+
+    @field_validator("database_url")
+    @classmethod
+    def _use_async_driver(cls, value: SecretStr) -> SecretStr:
+        """Accept the plain ``postgres://`` URLs that hosting providers hand out."""
+        url = value.get_secret_value()
+        for scheme in _PLAIN_SCHEMES:
+            if url.startswith(scheme):
+                return SecretStr(_ASYNC_DRIVER_SCHEME + url.removeprefix(scheme))
+        return value
 {%- endif %}

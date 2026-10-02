@@ -1,4 +1,4 @@
-# Uniform commands (HANDBOOK §3). Requires uv; `just setup` once after cloning.
+# Uniform commands (HANDBOOK §3). Requires uv{% if has_database %} and Docker{% endif %}; `just setup` once after cloning.
 
 set windows-shell := ["powershell.exe", "-NoLogo", "-NoProfile", "-Command"]
 
@@ -13,11 +13,17 @@ setup:
 {%- if has_web_api %}
     just openapi
 {%- endif %}
-{%- if has_web_api %}
 
-# Run the API locally with auto-reload
+# Run locally{% if has_database %} (starts PostgreSQL in Docker and applies migrations){% endif %}{% if has_web_api %} with auto-reload{% endif %}
 dev:
+{%- if has_database %}
+    docker compose up --detach --wait postgres
+    uv run alembic upgrade head
+{%- endif %}
+{%- if has_web_api %}
     uv run uvicorn {{ package_name }}.main:app_factory --factory --reload
+{%- else %}
+    uv run {{ project_slug }}
 {%- endif %}
 
 # Check formatting and lint
@@ -29,7 +35,7 @@ lint:
 typecheck:
     uv run mypy
 
-# Run the tests with coverage
+# Run the tests with coverage{% if has_database %} (integration tests need Docker; skip with: just test -m "not integration"){% endif %}
 test *args:
     uv run pytest --cov {% raw %}{{ args }}{% endraw %}
 
@@ -40,6 +46,16 @@ check: lint typecheck test
 fmt:
     uv run ruff format .
     uv run ruff check --fix .
+{%- if has_database %}
+
+# Apply database migrations
+migrate:
+    uv run alembic upgrade head
+
+# Generate a migration from model changes: just migration "add orders table"
+migration message:
+    uv run alembic revision --autogenerate -m "{% raw %}{{ message }}{% endraw %}"
+{%- endif %}
 {%- if has_web_api %}
 
 # Regenerate the committed OpenAPI spec (a test fails when it is stale)
