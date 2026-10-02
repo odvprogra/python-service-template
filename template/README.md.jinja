@@ -2,7 +2,101 @@
 
 > {{ description }}
 
-Generated from [python-service-template](https://github.com/odvprogra/python-service-template).
+[![CI](https://github.com/{{ github_owner }}/{{ project_slug }}/actions/workflows/ci.yml/badge.svg)](https://github.com/{{ github_owner }}/{{ project_slug }}/actions/workflows/ci.yml)
+[![Python 3.14](https://img.shields.io/badge/python-3.14-blue.svg)](.python-version)
+[![License: {{ license }}](https://img.shields.io/badge/license-{{ license | replace("-", "--") }}-blue.svg)](LICENSE)
+
+<!--
+README structure: HANDBOOK §11 (https://github.com/odvprogra/engineering-standards/blob/v1/HANDBOOK.md).
+Replace every comment block; keep the section order.
+-->
+
+## Demo
+
+<!-- Live URL and/or a GIF. Demo credentials if there are any. -->
+
+## The problem
+
+<!-- Business context in 3–5 sentences: who has the problem and what it costs them today. -->
+
+## What it does
+
+<!-- Key features as a short list. -->
+
+## Architecture
+
+```mermaid
+flowchart LR
+    client([Client]) --> {% if has_web_api %}api[HTTP API]{% else %}entry[Entry point]{% endif %}
+    {% if has_web_api %}api{% else %}entry{% endif %} --> app[Application<br/>use cases]
+    app --> domain[Domain<br/>business rules]
+    app --> infra[Infrastructure<br/>adapters]
+{%- if has_database %}
+    infra --> db[(PostgreSQL)]
+{%- endif %}
+```
+
+Hexagonal-lite: dependencies point inward, the domain is pure Python, and an architecture test
+enforces both. Details in [docs/architecture.md](docs/architecture.md).
+
+## Key decisions
+
+| Decision | Why |
+| --- | --- |
+| [ADR-0001](docs/adr/0001-record-architecture-decisions.md) Hexagonal-lite, decisions recorded as ADRs | Business rules testable without infrastructure; reasons survive the people who made them |
+
+## Run it locally
+
+Requires [uv](https://docs.astral.sh/uv/) and [just](https://just.systems/){% if has_database %}, plus Docker{% endif %}.
+
+```sh
+just setup   # dependencies, git hooks{% if has_web_api %}, openapi.json{% endif %}
+just dev     # {% if has_database %}PostgreSQL in Docker + migrations, then {% endif %}{% if has_web_api %}the API on http://localhost:8000 (docs at /docs){% else %}the service{% endif %}
+just check   # lint, types and tests: what CI runs
+```
+
+Configuration comes from environment variables; [.env.example](.env.example) documents them.
+
+## Testing strategy
+
+| Level | Location | What it covers |
+| --- | --- | --- |
+| Unit | `tests/unit` | Domain rules and application use cases, no I/O |
+| Architecture | `tests/architecture` | Import contracts: dependencies point inward, the domain is pure |
+{%- if has_database %}
+| Integration | `tests/integration` | Adapters against a real PostgreSQL (testcontainers); migrations reversible and in sync |
+{%- endif %}
+{%- if has_web_api %}
+| API | `tests/e2e` | HTTP behavior: Problem Details, request IDs, health, OpenAPI drift |
+{%- endif %}
+
+`just test` runs everything with coverage (gate: 80% overall, 95% on the domain in CI).
+{%- if has_database %}
+Integration tests need Docker; `just test -m "not integration"` skips them.
+{%- endif %}
+
+## Project structure
+
+```text
+src/{{ package_name }}/
+├── domain/          # business rules, pure Python
+├── application/     # use cases and ports
+├── infrastructure/  # adapters: logging{% if has_database %}, database{% endif %}
+{%- if has_web_api %}
+├── api/             # FastAPI app, Problem Details, middleware, health
+{%- endif %}
+├── settings.py      # configuration from the environment
+└── main.py          # composition root
+tests/               # unit, architecture{% if has_database %}, integration{% endif %}{% if has_web_api %}, e2e{% endif %}
+{%- if has_database %}
+migrations/          # Alembic
+{%- endif %}
+docs/                # architecture and ADRs
+```
+
+## Trade-offs & what I'd do next
+
+<!-- Honest limitations and next steps. The strongest signal of judgment in the whole README. -->
 
 ## License
 

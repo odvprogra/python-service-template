@@ -69,6 +69,11 @@ Copier asks for:
   - integration tests on a real PostgreSQL (testcontainers) that prove migrations are reversible and
     that models and migrations are in sync (`alembic check`)
   - `docker-compose.yml` for local development; `just dev`, `just migrate`, `just migration`
+- Documentation to fill in: a README with the handbook's 11 sections (run, test and structure
+  sections already written for the chosen options), ADR-0001, `docs/architecture.md` with Mermaid
+  context and container views, and `CLAUDE.md` for AI coding assistants. These belong to the project
+  after generation: `copier update` never overwrites them
+- Pull request and issue templates, and Dependabot for uv, Docker and GitHub Actions
 
 After generating: `cd my-service && git init && just setup && just check`.
 

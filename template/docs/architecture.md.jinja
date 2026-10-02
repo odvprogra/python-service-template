@@ -1,0 +1,49 @@
+# Architecture
+
+<!-- C4-style views (https://c4model.com): extend these diagrams as the service grows. -->
+
+## Context
+
+Who uses {{ project_name }} and which systems it talks to.
+
+```mermaid
+flowchart LR
+    user([User or client system]) -->|{% if has_web_api %}HTTPS / JSON{% else %}invokes{% endif %}| service[{{ project_name }}]
+{%- if has_database %}
+    service -->|SQL| db[(PostgreSQL)]
+{%- endif %}
+```
+
+## Containers
+
+```mermaid
+flowchart LR
+{%- if has_web_api %}
+    subgraph service[{{ project_name }}]
+        api[api<br/>FastAPI, Problem Details, request IDs]
+        app[application<br/>use cases, ports]
+        domain[domain<br/>business rules]
+        infra[infrastructure<br/>adapters]
+        api --> app
+{%- else %}
+    subgraph service[{{ project_name }}]
+        main[main<br/>composition root]
+        app[application<br/>use cases, ports]
+        domain[domain<br/>business rules]
+        infra[infrastructure<br/>adapters]
+        main --> app
+{%- endif %}
+        app --> domain
+        infra -.implements ports.-> app
+    end
+{%- if has_database %}
+    infra --> db[(PostgreSQL 18)]
+{%- endif %}
+```
+
+## Rules
+
+- Dependencies point inward; the domain imports no framework or infrastructure library. Enforced by
+  the import contracts in `pyproject.toml` (`tests/architecture`).
+- Configuration is read only in `main.py` (the composition root) and passed in.
+- Every log line is structured JSON with a `request_id` when one exists.

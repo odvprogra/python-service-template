@@ -5,6 +5,12 @@ _min_copier_version: "9.4"
 _subdirectory: template
 _answers_file: .copier-answers.yml
 _templates_suffix: .jinja
+# Starting points the project owns after generation: `copier update` never overwrites them.
+_skip_if_exists:
+  - README.md
+  - CLAUDE.md
+  - docs/architecture.md
+  - docs/adr/0001-record-architecture-decisions.md
 
 project_name:
   type: str
