@@ -49,6 +49,10 @@ dev = [
 requires = ["uv_build>=0.12,<0.13"]
 build-backend = "uv_build"
 
+# The import package can be named differently from the distribution.
+[tool.uv.build-backend]
+module-name = "{{ package_name }}"
+
 # --- Lint and format (HANDBOOK §1, §6) -------------------------------------------------------------
 
 [tool.ruff]
