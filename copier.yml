@@ -1,0 +1,74 @@
+# Copier template for Python services that follow the engineering handbook:
+# https://github.com/odvprogra/engineering-standards/blob/v1/HANDBOOK.md
+
+_min_copier_version: "9.4"
+_subdirectory: template
+_answers_file: .copier-answers.yml
+_templates_suffix: .jinja
+
+project_name:
+  type: str
+  help: Human-readable project name
+  placeholder: Pricewright API
+  validator: "{% if not project_name.strip() %}A project name is required{% endif %}"
+
+project_slug:
+  type: str
+  help: Repository and distribution name (kebab-case)
+  default: "{{ project_name.strip() | lower | replace(' ', '-') | replace('_', '-') }}"
+  validator: >-
+    {% if not (project_slug | regex_search('^[a-z][a-z0-9-]*[a-z0-9]$')) %}
+    Use lowercase letters, digits and hyphens; start with a letter
+    {% endif %}
+
+package_name:
+  type: str
+  help: Python import package (snake_case)
+  default: "{{ project_slug | replace('-', '_') }}"
+  validator: >-
+    {% if not (package_name | regex_search('^[a-z][a-z0-9_]*$')) %}
+    Use lowercase letters, digits and underscores; start with a letter
+    {% endif %}
+
+description:
+  type: str
+  help: One-line description (pyproject and README pitch)
+  validator: "{% if not description.strip() %}A description is required{% endif %}"
+
+author_name:
+  type: str
+  help: Author for pyproject.toml and the license
+  default: Oscar David Valle Pereyra
+
+github_owner:
+  type: str
+  help: GitHub user or organization that owns the repository (used in badges and links)
+  default: odvprogra
+
+has_web_api:
+  type: bool
+  help: Include a FastAPI HTTP API (Problem Details, request IDs, health endpoints)?
+  default: true
+
+has_database:
+  type: bool
+  help: Include PostgreSQL support (async SQLAlchemy, Alembic, testcontainers)?
+  default: false
+
+license:
+  type: str
+  help: License of the generated project
+  choices:
+    - MIT
+    - Apache-2.0
+  default: MIT
+
+copyright_year:
+  type: int
+  help: Copyright year for the license
+  default: "{{ '%Y' | strftime }}"
+
+standards_ref:
+  type: str
+  help: Release of odvprogra/engineering-standards whose reusable workflows CI pins
+  default: v1
