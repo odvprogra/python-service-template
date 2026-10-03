@@ -66,7 +66,9 @@ Copier asks for:
 - With `has_database`: PostgreSQL 18 through async SQLAlchemy (asyncpg) and Alembic
   - `DATABASE_URL` as a secret setting; plain `postgres://` URLs from hosting providers are accepted
   - a declarative base with deterministic constraint names, a session factory and a readiness check
-  - Alembic configured in `pyproject.toml`; new revisions are run through ruff automatically
+  - Alembic configured in `pyproject.toml`; new revisions are run through ruff automatically and
+    named by UTC creation time, so the directory reads as the history; a test keeps a single head
+  - constraint names list every column, so composite keys get distinct names
   - integration tests on a real PostgreSQL (testcontainers) that prove migrations are reversible and
     that models and migrations are in sync (`alembic check`)
   - `docker-compose.yml` for local development; `just dev`, `just migrate`, `just migration`
@@ -96,6 +98,7 @@ the differences as a normal git diff to review.
 | [Architecture tests](docs/adr/0004-architecture-tests-with-import-linter.md)                          | The dependency rule fails the build instead of eroding                         |
 | [Migrations as a release step](docs/adr/0005-run-migrations-as-a-release-step.md)                     | No migration races between replicas; a failed migration stops the release      |
 | [httpx for API tests](docs/adr/0006-keep-httpx-for-api-tests.md)                                      | A stable test client until its successor matures                               |
+| [Migrations named by UTC time](docs/adr/0007-name-migrations-by-utc-creation-time.md)                 | Files sort as the history; branches never collide on a name                    |
 
 All ADRs: [docs/adr](docs/adr/README.md).
 

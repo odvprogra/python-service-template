@@ -78,6 +78,12 @@ def check_project(project: Path) -> None:
     run("uv", "run", "pre-commit", "run", "--all-files", cwd=project)
 
 
+def check_new_migration(project: Path) -> None:
+    """A new revision gets the configured file name and keeps the history linear."""
+    run("uv", "run", "alembic", "revision", "--message", "template check", cwd=project)
+    run("uv", "run", "pytest", "--no-cov", "tests/unit/test_migration_history.py", cwd=project)
+
+
 def wait_until_ready() -> None:
     deadline = time.monotonic() + READINESS_TIMEOUT_S
     while True:
@@ -124,6 +130,8 @@ def check_variant(variant: str, *, docker: bool, keep: bool) -> None:
     try:
         render(variant, project)
         check_project(project)
+        if VARIANTS[variant]["has_database"]:
+            check_new_migration(project)
         if docker:
             smoke_test_image(variant, project)
     except subprocess.CalledProcessError as error:
