@@ -12,5 +12,6 @@ live in
 | 0004 | [Enforce the dependency rule with architecture tests](0004-architecture-tests-with-import-linter.md)                    | Accepted |
 | 0005 | [Run database migrations as a release step](0005-run-migrations-as-a-release-step.md)                                   | Accepted |
 | 0006 | [Keep httpx for API tests until httpx2 matures](0006-keep-httpx-for-api-tests.md)                                       | Accepted |
+| 0007 | [Name migration files by UTC creation time](0007-name-migrations-by-utc-creation-time.md)                               | Accepted |
 
 New ADRs start from [the template](template.md).
