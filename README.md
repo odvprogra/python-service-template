@@ -58,7 +58,7 @@ Copier asks for:
   (`docker run <image> alembic upgrade head` as a release step)
 - With `has_web_api`: a FastAPI app with
   - RFC 9457 Problem Details for domain, validation, HTTP and unexpected errors (a 500 never leaks
-    internals)
+    internals), and an OpenAPI spec that documents every error response as one
   - a pure ASGI request-context middleware: `X-Request-ID` on every response (caller's ID echoed if
     safe, UUIDv7 otherwise), the same ID on every log line, one `request.completed` line per request
   - `/health/live` and `/health/ready` with pluggable readiness checks
