@@ -61,6 +61,13 @@ has_database:
   help: Include PostgreSQL support (async SQLAlchemy, Alembic, testcontainers)?
   default: false
 
+has_worker:
+  type: bool
+  help: Include a background worker (periodic tasks, same image, its own process)?
+  default: false
+  # A worker drains the database (an outbox, expired records), so it comes with one.
+  when: "{{ has_database }}"
+
 license:
   type: str
   help: License of the generated project

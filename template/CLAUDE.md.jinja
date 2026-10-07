@@ -29,6 +29,9 @@ just setup | just dev | just check | just test | just lint | just typecheck | ju
 {%- if has_database %}
 just migrate | just migration "<message>"
 {%- endif %}
+{%- if has_worker %}
+just worker
+{%- endif %}
 {%- if has_web_api %}
 just openapi
 {%- endif %}
@@ -41,7 +44,7 @@ just openapi
 ```text
 src/{{ package_name }}/domain/          pure business logic, no I/O
 src/{{ package_name }}/application/     use cases + ports (Protocols)
-src/{{ package_name }}/infrastructure/  adapters (logging{% if has_database %}, database{% endif %}, ...)
+src/{{ package_name }}/infrastructure/  adapters (logging{% if has_database %}, database{% endif %}{% if has_worker %}, worker loop{% endif %}, ...)
 {%- if has_web_api %}
 src/{{ package_name }}/api/             FastAPI app, routers, Problem Details
 {%- endif %}

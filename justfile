@@ -19,7 +19,7 @@ lint:
     {{ prettier }} --check .
     {{ markdownlint }}
 
-# Render variants and run their own checks: just test api-db --docker (api-db, api, db, minimal, all)
+# Render variants and run their own checks: just test api-db --docker (see scripts/check_variant.py)
 test variant="all" *flags:
     uv run scripts/check_variant.py {{ variant }} {{ flags }}
 

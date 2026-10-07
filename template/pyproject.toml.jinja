@@ -24,6 +24,9 @@ dependencies = [
 
 [project.scripts]
 {{ project_slug }} = "{{ package_name }}.main:main"
+{%- if has_worker %}
+{{ project_slug }}-worker = "{{ package_name }}.main:worker"
+{%- endif %}
 
 [dependency-groups]
 dev = [

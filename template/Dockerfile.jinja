@@ -47,4 +47,7 @@ EXPOSE 8000
 {%- endif %}
 
 USER 10001
-CMD ["{{ project_slug }}"]
+{%- if has_worker %}
+# The worker runs from the same image: {% if has_web_api %}docker run <image> {{ project_slug }}-worker{% else %}it is the service's main process{% endif %}
+{%- endif %}
+CMD ["{{ project_slug }}{% if has_worker and not has_web_api %}-worker{% endif %}"]

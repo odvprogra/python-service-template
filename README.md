@@ -33,6 +33,7 @@ Copier asks for:
 | `github_owner`   | `odvprogra`               | Owner used in badges and links                                          |
 | `has_web_api`    | `true`                    | FastAPI HTTP API with Problem Details, request IDs and health endpoints |
 | `has_database`   | `false`                   | PostgreSQL with async SQLAlchemy, Alembic and testcontainers            |
+| `has_worker`     | `false`                   | A background worker for periodic tasks (asked when there is a database) |
 | `license`        | `MIT`                     | `MIT` or `Apache-2.0`                                                   |
 | `copyright_year` | current year              | Year in the license                                                     |
 | `standards_ref`  | `v1`                      | Release of the shared CI workflows that the generated CI pins           |
@@ -71,7 +72,14 @@ Copier asks for:
   - constraint names list every column, so composite keys get distinct names
   - integration tests on a real PostgreSQL (testcontainers) that prove migrations are reversible and
     that models and migrations are in sync (`alembic check`)
-  - `docker-compose.yml` for local development; `just dev`, `just migrate`, `just migration`
+  - `docker-compose.yml` for local development; `just dev`, `just migrate`, `just migration`; the
+    host port comes from `POSTGRES_PORT` (default 5432)
+- With `has_worker`: a background worker in its own process, from the same image
+  - a `<slug>-worker` command running periodic tasks: each runs at start, then every interval plus
+    up to 10% jitter; a failed run is logged and retried at the next turn
+  - SIGINT or SIGTERM let the runs in progress finish before the worker exits
+  - a `worker` service in `docker-compose.yml` and `just worker`; images without an API start the
+    worker by default
 - Documentation to fill in: a README with the handbook's 11 sections (run, test and structure
   sections already written for the chosen options), ADR-0001, `docs/architecture.md` with Mermaid
   context and container views, and `CLAUDE.md` for AI coding assistants. These belong to the project
@@ -99,6 +107,7 @@ the differences as a normal git diff to review.
 | [Migrations as a release step](docs/adr/0005-run-migrations-as-a-release-step.md)                     | No migration races between replicas; a failed migration stops the release      |
 | [httpx for API tests](docs/adr/0006-keep-httpx-for-api-tests.md)                                      | A stable test client until its successor matures                               |
 | [Migrations named by UTC time](docs/adr/0007-name-migrations-by-utc-creation-time.md)                 | Files sort as the history; branches never collide on a name                    |
+| [A worker process](docs/adr/0008-run-background-work-in-a-worker-process.md)                          | Background work scales and deploys on its own, from the same image             |
 
 All ADRs: [docs/adr](docs/adr/README.md).
 
@@ -106,11 +115,12 @@ All ADRs: [docs/adr](docs/adr/README.md).
 
 Every option combination is rendered and checked in CI: the generated project must pass its own
 `just setup`, `just check` (including integration tests on PostgreSQL) and pre-commit hooks, then
-its image must build, run as non-root and answer `/health/ready`. The same script runs locally:
+its image must build, run as non-root and answer `/health/ready`, and a worker must start and stop
+cleanly on SIGTERM. The same script runs locally:
 
 ```sh
 just lint                 # actionlint, ruff on scripts/, Prettier, markdownlint
-just test api-db --docker # one variant: api-db, api, db or minimal
+just test api-db --docker # one variant: api-db, api-db-worker, api, db, db-worker or minimal
 just check                # lint + every variant with the Docker smoke test
 ```
 
