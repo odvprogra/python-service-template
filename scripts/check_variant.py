@@ -14,6 +14,7 @@ Requires uv, just, git and (for database variants and --docker) Docker.
 """
 
 import argparse
+import os
 import shutil
 import subprocess
 import sys
@@ -21,6 +22,7 @@ import tempfile
 import time
 import urllib.error
 import urllib.request
+from functools import partial
 from pathlib import Path
 
 from copier import run_copy
@@ -44,13 +46,19 @@ VARIANTS: dict[str, dict[str, bool | str]] = {
     "minimal": {"has_web_api": False, "has_database": False},
 }
 READINESS_URL = "http://localhost:8000/health/ready"
+# The smoke test publishes PostgreSQL on another host port, which also proves the mapping honors
+# POSTGRES_PORT (5432 may be taken on a developer's machine).
+COMPOSE_ENV = {"POSTGRES_PORT": "55432"}
 READINESS_TIMEOUT_S = 90
 NON_ROOT_USERS = {"", "root", "0"}
 
 
-def run(*command: str, cwd: Path) -> str:
+def run(*command: str, cwd: Path, env: dict[str, str] | None = None) -> str:
     print(f"$ {' '.join(command)}", flush=True)
-    result = subprocess.run(command, cwd=cwd, check=True, capture_output=True, text=True)
+    environment = None if env is None else os.environ | env
+    result = subprocess.run(
+        command, cwd=cwd, check=True, capture_output=True, text=True, env=environment
+    )
     return result.stdout
 
 
@@ -108,13 +116,16 @@ def smoke_test_image(variant: str, project: Path) -> None:
     if not options["has_web_api"]:
         run("docker", "run", "--rm", image, cwd=project)  # starts, logs and exits 0
     elif options["has_database"]:
+        compose = partial(run, "docker", "compose", cwd=project, env=COMPOSE_ENV)
         try:
-            run("docker", "compose", "up", "--build", "--detach", "--wait", cwd=project)
+            compose("up", "--build", "--detach", "--wait")
+            published = compose("port", "postgres", "5432").strip()
+            if not published.endswith(f":{COMPOSE_ENV['POSTGRES_PORT']}"):
+                raise SystemExit(f"{variant}: PostgreSQL published on {published}")
             wait_until_ready()
-            migrate = ("alembic", "upgrade", "head")
-            run("docker", "compose", "run", "--rm", "app", *migrate, cwd=project)
+            compose("run", "--rm", "app", "alembic", "upgrade", "head")
         finally:
-            run("docker", "compose", "down", "--volumes", cwd=project)
+            compose("down", "--volumes")
     else:
         container = run("docker", "run", "--detach", "--publish", "8000:8000", image, cwd=project)
         try:

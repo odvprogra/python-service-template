@@ -8,7 +8,8 @@ services:
       POSTGRES_PASSWORD: app
       POSTGRES_DB: {{ package_name }}
     ports:
-      - "5432:5432"
+      # Another PostgreSQL on the machine may hold 5432: set POSTGRES_PORT (and DATABASE_URL) in .env.
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       # PostgreSQL 18 images keep data under /var/lib/postgresql/<major>/docker.
       - postgres-data:/var/lib/postgresql
