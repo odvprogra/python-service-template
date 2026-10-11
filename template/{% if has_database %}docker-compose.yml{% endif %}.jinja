@@ -1,5 +1,5 @@
-# Local infrastructure for `just dev` (which starts only postgres) and the full stack for the CI smoke
-# test (`docker compose up --wait`). Tests start their own database with testcontainers.
+# Local infrastructure (`just dev`{% if has_worker %} and `just worker`{% endif %} start only postgres) and the full stack for
+# the CI smoke test (`docker compose up --wait`). Tests start their own database with testcontainers.
 services:
   postgres:
     image: postgres:18-alpine
@@ -39,6 +39,18 @@ services:
       interval: 2s
       timeout: 3s
       retries: 20
+{%- endif %}
+{%- if has_worker %}
+
+  worker:
+    build: .
+    command: ["{{ project_slug }}-worker"]
+    environment:
+      DATABASE_URL: postgresql+asyncpg://app:app@postgres:5432/{{ package_name }}
+      ENVIRONMENT: local
+    depends_on:
+      postgres:
+        condition: service_healthy
 {%- endif %}
 
 volumes:

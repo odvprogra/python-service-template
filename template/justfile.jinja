@@ -25,6 +25,14 @@ dev:
 {%- else %}
     uv run {{ project_slug }}
 {%- endif %}
+{%- if has_worker %}
+
+# Run the background worker (starts PostgreSQL in Docker and applies migrations); Ctrl+C stops it
+worker:
+    docker compose up --detach --wait postgres
+    uv run alembic upgrade head
+    uv run {{ project_slug }}-worker
+{%- endif %}
 
 # Check formatting and lint
 lint:

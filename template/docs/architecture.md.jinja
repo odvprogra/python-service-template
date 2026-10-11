@@ -35,6 +35,9 @@ flowchart LR
 {%- endif %}
         app --> domain
         infra -.implements ports.-> app
+{%- if has_worker %}
+        worker[worker<br/>periodic tasks, own process] --> app
+{%- endif %}
     end
 {%- if has_database %}
     infra --> db[(PostgreSQL 18)]

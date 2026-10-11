@@ -52,6 +52,9 @@ Requires [uv](https://docs.astral.sh/uv/) and [just](https://just.systems/){% if
 ```sh
 just setup   # dependencies, git hooks{% if has_web_api %}, openapi.json{% endif %}
 just dev     # {% if has_database %}PostgreSQL in Docker + migrations, then {% endif %}{% if has_web_api %}the API on http://localhost:8000 (docs at /docs){% else %}the service{% endif %}
+{%- if has_worker %}
+just worker  # the background worker (in another terminal); Ctrl+C stops it
+{%- endif %}
 just check   # lint, types and tests: what CI runs
 ```
 
@@ -81,7 +84,7 @@ Integration tests need Docker; `just test -m "not integration"` skips them.
 src/{{ package_name }}/
 ├── domain/          # business rules, pure Python
 ├── application/     # use cases and ports
-├── infrastructure/  # adapters: logging{% if has_database %}, database{% endif %}
+├── infrastructure/  # adapters: logging{% if has_database %}, database{% endif %}{% if has_worker %}, worker{% endif %}
 {%- if has_web_api %}
 ├── api/             # FastAPI app, Problem Details, middleware, health
 {%- endif %}

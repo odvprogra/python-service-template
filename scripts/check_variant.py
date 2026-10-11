@@ -28,21 +28,22 @@ from pathlib import Path
 from copier import run_copy
 
 TEMPLATE_ROOT = Path(__file__).resolve().parents[1]
-# Copier answers per variant. api-db exercises the non-default paths: an import package named
-# differently from the distribution (demo-service ships `demo`) and a description too long for one
-# line of code.
+# Copier answers per variant: every combination of the options (a worker needs a database). The
+# api-db variants exercise the non-default paths: an import package named differently from the
+# distribution (demo-service ships `demo`) and a description too long for one line of code.
+_ODD_NAMES: dict[str, bool | str] = {
+    "package_name": "demo",
+    "description": (
+        "A demo service whose one-line description is long enough to need wrapping wherever"
+        " it is rendered as code."
+    ),
+}
 VARIANTS: dict[str, dict[str, bool | str]] = {
-    "api-db": {
-        "has_web_api": True,
-        "has_database": True,
-        "package_name": "demo",
-        "description": (
-            "A demo service whose one-line description is long enough to need wrapping wherever"
-            " it is rendered as code."
-        ),
-    },
+    "api-db": {"has_web_api": True, "has_database": True, **_ODD_NAMES},
+    "api-db-worker": {"has_web_api": True, "has_database": True, "has_worker": True, **_ODD_NAMES},
     "api": {"has_web_api": True, "has_database": False},
     "db": {"has_web_api": False, "has_database": True},
+    "db-worker": {"has_web_api": False, "has_database": True, "has_worker": True},
     "minimal": {"has_web_api": False, "has_database": False},
 }
 READINESS_URL = "http://localhost:8000/health/ready"
@@ -50,6 +51,7 @@ READINESS_URL = "http://localhost:8000/health/ready"
 # POSTGRES_PORT (5432 may be taken on a developer's machine).
 COMPOSE_ENV = {"POSTGRES_PORT": "55432"}
 READINESS_TIMEOUT_S = 90
+WORKER_START_TIMEOUT_S = 60
 NON_ROOT_USERS = {"", "root", "0"}
 
 
@@ -105,6 +107,29 @@ def wait_until_ready() -> None:
             time.sleep(1)
 
 
+def container_logs(container: str) -> str:
+    """Everything the container wrote: services log to standard error."""
+    result = subprocess.run(
+        ["docker", "logs", container], check=True, capture_output=True, text=True
+    )
+    return result.stdout + result.stderr
+
+
+def check_worker(container: str, project: Path) -> None:
+    """The worker starts, and SIGTERM (``docker stop``) lets it finish and exit with status 0."""
+    deadline = time.monotonic() + WORKER_START_TIMEOUT_S
+    while "worker.started" not in container_logs(container):
+        if time.monotonic() > deadline:
+            print(container_logs(container), file=sys.stderr)
+            raise SystemExit("the worker never started")
+        time.sleep(1)
+    run("docker", "stop", container, cwd=project)
+    status = run("docker", "inspect", "--format", "{{.State.ExitCode}}", container, cwd=project)
+    if status.strip() != "0" or "worker.stopped" not in container_logs(container):
+        print(container_logs(container), file=sys.stderr)
+        raise SystemExit(f"the worker did not stop cleanly (exit status {status.strip()})")
+
+
 def smoke_test_image(variant: str, project: Path) -> None:
     image = f"template-check-{variant}"
     run("docker", "build", "--quiet", "--tag", image, ".", cwd=project)
@@ -113,7 +138,13 @@ def smoke_test_image(variant: str, project: Path) -> None:
         raise SystemExit(f"{variant}: the image runs as root")
 
     options = VARIANTS[variant]
-    if not options["has_web_api"]:
+    if not options["has_web_api"] and options.get("has_worker"):
+        container = run("docker", "run", "--detach", image, cwd=project).strip()
+        try:
+            check_worker(container, project)
+        finally:
+            run("docker", "rm", "--force", container, cwd=project)
+    elif not options["has_web_api"]:
         run("docker", "run", "--rm", image, cwd=project)  # starts, logs and exits 0
     elif options["has_database"]:
         compose = partial(run, "docker", "compose", cwd=project, env=COMPOSE_ENV)
@@ -124,6 +155,8 @@ def smoke_test_image(variant: str, project: Path) -> None:
                 raise SystemExit(f"{variant}: PostgreSQL published on {published}")
             wait_until_ready()
             compose("run", "--rm", "app", "alembic", "upgrade", "head")
+            if options.get("has_worker"):
+                check_worker(compose("ps", "--all", "--quiet", "worker").strip(), project)
         finally:
             compose("down", "--volumes")
     else:
